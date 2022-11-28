@@ -28,31 +28,31 @@ const float  two_sixth = 2.0 / 6.0;
 const float four_sixth = 4.0 / 6.0;
 const float five_sixth = 5.0 / 6.0;
 
-float reduce(vec3 color) {
-	return dot(color, vec3(65536.0, 256.0, 1.0));
+float reduce(vec4 color) {
+	return dot(color, vec4(65536.0, 256.0, 1.0, 1.0));
 }
 
-float DistYCbCr(vec3 pixA, vec3 pixB) {
-	const vec3 w = vec3(0.2627, 0.6780, 0.0593);
+float DistYCbCr(vec4 pixA, vec4 pixB) {
+	const vec4 w = vec4(0.2627, 0.6780, 0.0593, 1.0);
 	const float scaleB = 0.5 / (1.0 - w.b);
 	const float scaleR = 0.5 / (1.0 - w.r);
-	vec3 diff = pixA - pixB;
+	vec4 diff = pixA - pixB;
 	float Y = dot(diff, w);
 	float Cb = scaleB * (diff.b - Y);
 	float Cr = scaleR * (diff.r - Y);
 	return sqrt(((LUMINANCE_WEIGHT * Y) * (LUMINANCE_WEIGHT * Y)) + (Cb * Cb) + (Cr * Cr));
 }
 
-bool IsPixEqual(vec3 pixA, vec3 pixB) {
+bool IsPixEqual(vec4 pixA, vec4 pixB) {
 	return (DistYCbCr(pixA, pixB) < EQUAL_COLOR_TOLERANCE);
 }
 
-ivec4 notEqual(ivec4 a, ivec4 b) {
-	return ivec4(
-		int(a[0] != b[0]),
-		int(a[1] != b[1]),
-		int(a[2] != b[2]),
-		int(a[3] != b[3])
+bvec4 notEqual(ivec4 a, ivec4 b) {
+	return bvec4(
+		a[0] != b[0],
+		a[1] != b[1],
+		a[2] != b[2],
+		a[3] != b[3]
 	);
 }
 
@@ -69,28 +69,28 @@ void fragment() {
 	vec4 source_size = vec4(source_wh, 1.0 / source_wh);
 	
 	vec2 f = fract(UV * source_size.xy);
-	vec3 src[25];
-	src[21] = texture(TEXTURE, t[1].xw).rgb;
-	src[22] = texture(TEXTURE, t[1].yw).rgb;
-	src[23] = texture(TEXTURE, t[1].zw).rgb;
-	src[6] = texture(TEXTURE, t[2].xw).rgb;
-	src[7] = texture(TEXTURE, t[2].yw).rgb;
-	src[8] = texture(TEXTURE, t[2].zw).rgb;
-	src[5] = texture(TEXTURE, t[3].xw).rgb;
-	src[0] = texture(TEXTURE, t[3].yw).rgb;
-	src[1] = texture(TEXTURE, t[3].zw).rgb;
-	src[4] = texture(TEXTURE, t[4].xw).rgb;
-	src[3] = texture(TEXTURE, t[4].yw).rgb;
-	src[2] = texture(TEXTURE, t[4].zw).rgb;
-	src[15] = texture(TEXTURE, t[5].xw).rgb;
-	src[14] = texture(TEXTURE, t[5].yw).rgb;
-	src[13] = texture(TEXTURE, t[5].zw).rgb;
-	src[19] = texture(TEXTURE, t[6].xy).rgb;
-	src[18] = texture(TEXTURE, t[6].xz).rgb;
-	src[17] = texture(TEXTURE, t[6].xw).rgb;
-	src[9] = texture(TEXTURE, t[7].xy).rgb;
-	src[10] = texture(TEXTURE, t[7].xz).rgb;
-	src[11] = texture(TEXTURE, t[7].xw).rgb;
+	vec4 src[25];
+	src[21] = texture(TEXTURE, t[1].xw).rgba;
+	src[22] = texture(TEXTURE, t[1].yw).rgba;
+	src[23] = texture(TEXTURE, t[1].zw).rgba;
+	src[6] = texture(TEXTURE, t[2].xw).rgba;
+	src[7] = texture(TEXTURE, t[2].yw).rgba;
+	src[8] = texture(TEXTURE, t[2].zw).rgba;
+	src[5] = texture(TEXTURE, t[3].xw).rgba;
+	src[0] = texture(TEXTURE, t[3].yw).rgba;
+	src[1] = texture(TEXTURE, t[3].zw).rgba;
+	src[4] = texture(TEXTURE, t[4].xw).rgba;
+	src[3] = texture(TEXTURE, t[4].yw).rgba;
+	src[2] = texture(TEXTURE, t[4].zw).rgba;
+	src[15] = texture(TEXTURE, t[5].xw).rgba;
+	src[14] = texture(TEXTURE, t[5].yw).rgba;
+	src[13] = texture(TEXTURE, t[5].zw).rgba;
+	src[19] = texture(TEXTURE, t[6].xy).rgba;
+	src[18] = texture(TEXTURE, t[6].xz).rgba;
+	src[17] = texture(TEXTURE, t[6].xw).rgba;
+	src[9] = texture(TEXTURE, t[7].xy).rgba;
+	src[10] = texture(TEXTURE, t[7].xz).rgba;
+	src[11] = texture(TEXTURE, t[7].xw).rgba;
 	
 	float v[9];
 	v[0] = reduce(src[0]);
@@ -137,7 +137,7 @@ void fragment() {
 		blendResult[0] = ((dist_05_07 < dist_06_00) && (v[0] != v[5]) && (v[0] != v[7])) ? ((dominantGradient) ? BLEND_DOMINANT : BLEND_NORMAL) : BLEND_NONE;
 	}
 	
-	vec3 dst[16];
+	vec4 dst[16];
 	dst[0] = src[0];
 	dst[1] = src[0];
 	dst[2] = src[0];
@@ -166,7 +166,7 @@ void fragment() {
 			(blendResult[3] != BLEND_NONE && !IsPixEqual(src[0], src[8])) ||
 				(IsPixEqual(src[4], src[3]) && IsPixEqual(src[3], src[2]) && IsPixEqual(src[2], src[1]) && IsPixEqual(src[1], src[8]) && IsPixEqual(src[0], src[2]) == false)) == false);
 
-		vec3 blendPix = (DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3])) ? src[1] : src[3];
+		vec4 blendPix = (DistYCbCr(src[0], src[1]) <= DistYCbCr(src[0], src[3])) ? src[1] : src[3];
 		dst[2] = mix(dst[2], blendPix, (needBlend && doLineBlend) ? ((haveShallowLine) ? ((haveSteepLine) ? 1.0 / 3.0 : 0.25) : ((haveSteepLine) ? 0.25 : 0.00)) : 0.00);
 		dst[9] = mix(dst[9], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.25 : 0.00);
 		dst[10] = mix(dst[10], blendPix, (needBlend && doLineBlend && haveSteepLine) ? 0.75 : 0.00);
@@ -238,11 +238,11 @@ void fragment() {
 		dst[6] = mix(dst[6], blendPix, (needBlend && doLineBlend && haveShallowLine) ? 0.25 : 0.00);
 	}
 
-	vec3 res = mix(mix(mix(mix(dst[6], dst[7], step(0.25, f.x)), mix(dst[8], dst[9], step(0.75, f.x)), step(0.50, f.x)),
+	vec4 res = mix(mix(mix(mix(dst[6], dst[7], step(0.25, f.x)), mix(dst[8], dst[9], step(0.75, f.x)), step(0.50, f.x)),
 		mix(mix(dst[5], dst[0], step(0.25, f.x)), mix(dst[1], dst[10], step(0.75, f.x)), step(0.50, f.x)), step(0.25, f.y)),
 		mix(mix(mix(dst[4], dst[3], step(0.25, f.x)), mix(dst[2], dst[11], step(0.75, f.x)), step(0.50, f.x)),
 			mix(mix(dst[15], dst[14], step(0.25, f.x)), mix(dst[13], dst[12], step(0.75, f.x)), step(0.50, f.x)), step(0.75, f.y)),
 		step(0.50, f.y));
 	
-	COLOR = vec4(res.rgb, 1.0);
+	COLOR = res;
 }
