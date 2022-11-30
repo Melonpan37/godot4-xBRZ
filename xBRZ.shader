@@ -7,6 +7,8 @@ uniform float DOMINANT_DIRECTION_THRESHOLD = 3.5;
 
 varying vec4 t[8];
 
+varying vec4 v_vertex_color; //gets modulate color
+
 void vertex() {
 	vec2 source_wh = vec2(1.0 / TEXTURE_PIXEL_SIZE.x, 1.0 / TEXTURE_PIXEL_SIZE.y);
 	vec4 source_size = vec4(source_wh, 1.0 / source_wh);
@@ -21,6 +23,8 @@ void vertex() {
 	t[5] = UV.xxxy + vec4(-dx, 0.0, dx, 2.0 * dy); // G5 H5 I5
 	t[6] = UV.xyyy + vec4(-2.0 * dx, -dy, 0.0, dy);  // A0 D0 G0
 	t[7] = UV.xyyy + vec4(2.0 * dx, -dy, 0.0, dy);  // C4 F4 I4
+	
+	v_vertex_color = COLOR;
 }
 
 const float  one_sixth = 1.0 / 6.0;
@@ -91,6 +95,10 @@ void fragment() {
 	src[9] = texture(TEXTURE, t[7].xy).rgba;
 	src[10] = texture(TEXTURE, t[7].xz).rgba;
 	src[11] = texture(TEXTURE, t[7].xw).rgba;
+	
+	//compute modulated color
+	for(int i = 0; i < 24; i++) src[i] *= v_vertex_color;
+	
 	
 	float v[9];
 	v[0] = reduce(src[0]);
